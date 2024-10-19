@@ -1,37 +1,20 @@
-#%%
+# %% 
 import pandas as pd
 import numpy as np
+from sklearn.feature_extraction.text import HashingVectorizer
+from sklearn.linear_model import SGDClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
 
-df = pd.read_csv("../ggg_sg.csv", nrows=10000)
+# 读取CSV文件的前1万行
+file_path = "../ggg_sg.csv"
+df = pd.read_csv(file_path, nrows=10000)
 
-#%%
-df.head()
-#%%
-# Check cols type
-for column in df.columns:
-    print(f"Column '{column}' data types:")
-    print(df[column].apply(type).value_counts())
-    print("\n")
-
-#%%
+# 选择需要的列并清洗数据
 selected_cols = ['Title', 'DateTime', 'DocTone', 'ContextualText']
-df_cleaned = df[selected_cols]
-df_cleaned = df_cleaned.dropna()
-# %%
-df_cleaned["DocTone"].describe()
-#%%
-import matplotlib.pyplot as plt
-import seaborn as sns
+df_cleaned = df[selected_cols].dropna()
 
-# Plot distribution of DocTone scores
-plt.figure(figsize=(10, 6))
-sns.histplot(df_cleaned["DocTone"], bins=50, kde=True)
-plt.title('Distribution of DocTone Scores (Sampled Data)')
-plt.xlabel('DocTone Score')
-plt.ylabel('Frequency')
-plt.show()
-# %%
-# Create sentiment label: Positive (2), Neutral (1), Negative (0)
+# 生成情感标签
 def sentiment_label(score):
     if score > 1.9910:
         return 2
@@ -39,31 +22,24 @@ def sentiment_label(score):
         return 0
     else:
         return 1
+
 df_cleaned["label"] = df_cleaned['DocTone'].apply(sentiment_label)
-#%%
-from sklearn.feature_extraction.text import TfidfVectorizer
 
-vectorizer = TfidfVectorizer()
+# 初始化HashingVectorizer和SGDClassifier（用于逻辑回归）
+vectorizer = HashingVectorizer(n_features=2**15)
+model = SGDClassifier(loss='log_loss', n_jobs=-1)  # 使用随机梯度下降并模拟逻辑回归
 
+# 提取文本特征和标签
 X = vectorizer.fit_transform(df_cleaned["ContextualText"])
+y = df_cleaned["label"].values
 
-print(vectorizer.get_feature_names_out())
-print(X.toarray())
-print(X.shape)
-
-y = df_cleaned["label"]
-# %%
-import numpy as np
-import pandas as pd
-from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
-
+# 切分训练集和测试集
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-model = LogisticRegression()
-
+# 模型训练
 model.fit(X_train, y_train)
+
+# 预测并评估模型
 y_pred = model.predict(X_test)
 accuracy = accuracy_score(y_test, y_pred)
 print(f"Accuracy: {accuracy}")
@@ -75,4 +51,5 @@ print(conf_matrix)
 report = classification_report(y_test, y_pred)
 print("Classification Report:")
 print(report)
+
 # %%

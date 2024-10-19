@@ -1,10 +1,10 @@
-#%%
-from transformers import BertTokenizer, BertForSequenceClassification
-from torch.utils.data import DataLoader, Dataset
-import torch
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score, classification_report
+# %%
 import pandas as pd
+import torch
+from sklearn.metrics import accuracy_score, classification_report
+from sklearn.model_selection import train_test_split
+from torch.utils.data import DataLoader, Dataset
+from transformers import BertForSequenceClassification, BertTokenizer
 
 
 # 1. 加载数据
@@ -46,6 +46,7 @@ df = pd.read_csv(file_path, nrows=10000)
 selected_cols = ["Title", "DateTime", "DocTone", "ContextualText"]
 df_cleaned = df[selected_cols].dropna()
 
+
 def sentiment_label(score):
     if score > 1.9910:
         return 2
@@ -54,7 +55,8 @@ def sentiment_label(score):
     else:
         return 1
 
-df_cleaned["label"] = df_cleaned['DocTone'].apply(sentiment_label)
+
+df_cleaned["label"] = df_cleaned["DocTone"].apply(sentiment_label)
 
 texts = df_cleaned["ContextualText"].tolist()
 labels = df_cleaned["label"].tolist()
@@ -69,7 +71,7 @@ test_dataset = CustomDataset(X_test, y_test, tokenizer, max_len=512)
 train_loader = DataLoader(train_dataset, batch_size=16, shuffle=True)
 test_loader = DataLoader(test_dataset, batch_size=16)
 
-#%%
+# %%
 # 4. 训练 BERT 模型
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(device)
@@ -85,20 +87,22 @@ for epoch in range(epochs):
     total_loss = 0
     correct_predictions = 0
     total_predictions = 0
-    
+
     # 记录 epoch 开始时间
     epoch_start_time = time.time()
-    
+
     for batch_idx, batch in enumerate(train_loader):
         batch_start_time = time.time()  # 记录每个 batch 的开始时间
-        
+
         optimizer.zero_grad()
 
         input_ids = batch["input_ids"].to(device)
         attention_mask = batch["attention_mask"].to(device)
         labels = batch["label"].to(device)
 
-        outputs = model(input_ids=input_ids, attention_mask=attention_mask, labels=labels)
+        outputs = model(
+            input_ids=input_ids, attention_mask=attention_mask, labels=labels
+        )
         loss = outputs.loss
         logits = outputs.logits
 
@@ -115,7 +119,9 @@ for epoch in range(epochs):
         batch_time = batch_end_time - batch_start_time
 
         # 输出每个 batch 的处理时间日志
-        print(f"Batch {batch_idx + 1}/{len(train_loader)} processed in {batch_time:.2f} seconds.")
+        print(
+            f"Batch {batch_idx + 1}/{len(train_loader)} processed in {batch_time:.2f} seconds."
+        )
 
     # 记录 epoch 结束时间并计算耗时
     epoch_end_time = time.time()

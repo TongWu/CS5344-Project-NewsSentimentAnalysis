@@ -1,0 +1,17 @@
+name: xinference
+services:
+  xinference:
+    image: xprobe/xinference:latest
+    container_name: xinference
+    volumes:
+      - "C:/xinference/.xinference:/root/.xinference"
+      - "C:/model/huggingface:/root/.cache/huggingface"
+      - "C:/model/modelscope:/root/.cache/modelscope"
+    ports:
+      - "9997:9997"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - capabilities: [gpu]
+    command: xinference-local -H 0.0.0.0
